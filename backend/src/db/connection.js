@@ -1,12 +1,11 @@
-const { Pool } = require('pg');
 
+const { Pool } = require('pg');
+ 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  // Railway usa SSL en producción
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  ssl: { rejectUnauthorized: false },
 });
-
-// Verificar conexión al iniciar
+ 
 pool.connect((err, client, release) => {
   if (err) {
     console.error('❌ Error conectando a PostgreSQL:', err.message);
@@ -15,5 +14,6 @@ pool.connect((err, client, release) => {
   release();
   console.log('✅ PostgreSQL conectado');
 });
-
+ 
 module.exports = pool;
+ 
