@@ -181,6 +181,18 @@ CREATE TABLE IF NOT EXISTS pagos_cxc (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- ── CATÁLOGO DE SERVICIOS ────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS servicios_catalogo (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  empresa_id  UUID NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
+  nombre      VARCHAR(200) NOT NULL,
+  categoria   VARCHAR(100),
+  precio_base NUMERIC(12,2) NOT NULL DEFAULT 0,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_servicios_empresa ON servicios_catalogo(empresa_id);
+
 -- ── COMPRAS ──────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS compras (
   id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),

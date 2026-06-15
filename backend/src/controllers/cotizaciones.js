@@ -3,7 +3,7 @@ const db = require('../db/connection');
 async function getAll(req, res, next) {
   try {
     const result = await db.query(
-      `SELECT co.id, co.total, co.estado, co.created_at,
+      `SELECT co.id, co.items, co.total, co.estado, co.created_at,
               c.nombre AS cliente_nombre, c.telefono AS cliente_telefono
        FROM cotizaciones co
        JOIN clientes c ON c.id = co.cliente_id
@@ -23,10 +23,10 @@ async function getById(req, res, next) {
     const result = await db.query(
       `SELECT co.*, c.nombre AS cliente_nombre, c.telefono AS cliente_telefono,
               c.email AS cliente_email, c.direccion AS cliente_direccion,
-              u.empresa AS empresa_nombre
+              e.nombre AS empresa_nombre
        FROM cotizaciones co
        JOIN clientes c ON c.id = co.cliente_id
-       JOIN usuarios u ON u.id = co.empresa_id
+       JOIN empresas e ON e.id = co.empresa_id
        WHERE co.id = $1 AND co.empresa_id = $2`,
       [req.params.id, req.user.empresa_id]
     );

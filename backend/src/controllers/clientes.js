@@ -5,7 +5,7 @@ async function getAll(req, res, next) {
     const result = await db.query(
       `SELECT c.*,
               COUNT(p.id) AS total_pedidos,
-              COALESCE(SUM(p.monto) FILTER (WHERE p.estado = 'entregado'), 0) AS total_facturado
+              COALESCE(SUM(p.total) FILTER (WHERE p.estado = 'entregado'), 0) AS total_facturado
        FROM clientes c
        LEFT JOIN pedidos p ON p.cliente_id = c.id
        WHERE c.empresa_id = $1
@@ -33,9 +33,8 @@ async function getById(req, res, next) {
 
     // Últimos pedidos del cliente
     const pedidos = await db.query(
-      `SELECT p.*, s.nombre AS servicio_nombre
+      `SELECT p.*
        FROM pedidos p
-       LEFT JOIN servicios_catalogo s ON s.id = p.servicio_id
        WHERE p.cliente_id = $1
        ORDER BY p.created_at DESC LIMIT 10`,
       [req.params.id]

@@ -6,7 +6,8 @@ const db     = require('../db/connection');
 // ── Registro (crea empresa + usuario admin) ──────────────────────────────────
 async function register(req, res, next) {
   try {
-    const { nombre, email, password, empresa } = req.body;
+    const { nombre, password, empresa } = req.body;
+    const email = (req.body.email || '').toLowerCase().trim();
 
     if (!nombre || !email || !password || !empresa) {
       return res.status(400).json({ error: 'Todos los campos son requeridos' });
@@ -55,7 +56,8 @@ async function register(req, res, next) {
 // ── Login ─────────────────────────────────────────────────────────────────────
 async function login(req, res, next) {
   try {
-    const { email, password } = req.body;
+    const email    = (req.body.email || '').toLowerCase().trim();
+    const password = req.body.password;
     if (!email || !password) {
       return res.status(400).json({ error: 'Email y contraseña requeridos' });
     }
@@ -64,7 +66,7 @@ async function login(req, res, next) {
       `SELECT u.*, e.nombre AS empresa_nombre, e.plan, e.trial_hasta, e.activa
        FROM usuarios u
        JOIN empresas e ON e.id = u.empresa_id
-       WHERE u.email = $1`,
+       WHERE LOWER(u.email) = $1`,
       [email]
     );
 

@@ -1,8 +1,7 @@
-
+const fs   = require('fs');
+const path = require('path');
 const { Pool } = require('pg');
 
-// Usa la URL interna de Railway si existe (evita el proxy y ECONNRESET).
-// Si no, cae al DATABASE_URL externo con SSL.
 const connectionString = process.env.DATABASE_PRIVATE_URL || process.env.DATABASE_URL;
 const isInternal = !!(process.env.DATABASE_PRIVATE_URL);
 
@@ -20,12 +19,23 @@ pool.on('error', (err) => {
   console.error('❌ PostgreSQL pool error:', err.message);
 });
 
+async function runMigrations() {
+  try {
+    const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
+    await pool.query(schema);
+    console.log('✅ Migraciones aplicadas');
+  } catch (err) {
+    console.error('⚠️ Error en migraciones:', err.message);
+  }
+}
+
 async function connectWithRetry(retries = 5, delay = 3000) {
   for (let i = 0; i < retries; i++) {
     try {
       const client = await pool.connect();
       client.release();
       console.log('✅ PostgreSQL conectado');
+      await runMigrations();
       return;
     } catch (err) {
       console.error(`❌ Intento ${i + 1}/${retries}: ${err.message}`);
