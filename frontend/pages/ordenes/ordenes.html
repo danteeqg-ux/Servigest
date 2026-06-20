@@ -53,6 +53,28 @@
     .item-tipo-mo   { color:#3B6D11; }
     .item-falta     { color:#A32D2D; font-weight:600; }
 
+    /* ── Buscador catálogo OT ────────────────────────────────────────────── */
+    .cat-search-wrap { position:relative; }
+    .cat-dropdown {
+      position:absolute; top:calc(100% + 4px); left:0; right:0; z-index:9999;
+      background:var(--color-bg); border:1px solid var(--color-border-md);
+      border-radius:var(--radius-md); box-shadow:0 4px 16px rgba(0,0,0,.12);
+      max-height:240px; overflow-y:auto; display:none;
+    }
+    .cat-item {
+      display:flex; align-items:center; gap:10px; padding:8px 12px;
+      cursor:pointer; font-size:13px; border-bottom:1px solid var(--color-border);
+    }
+    .cat-item:last-child { border-bottom:none; }
+    .cat-item:hover { background:var(--color-bg-secondary); }
+    .cat-item-name { flex:1; font-weight:500; }
+    .cat-item-sku  { font-size:11px; color:var(--color-text-muted); }
+    .cat-item-precio { font-weight:600; color:var(--color-accent); white-space:nowrap; }
+    .cat-tipo-badge { font-size:10px; font-weight:600; padding:1px 6px; border-radius:8px; white-space:nowrap; }
+    .cat-badge-ref  { background:#E6F1FB; color:#185FA5; }
+    .cat-badge-cons { background:#FAEEDA; color:#854F0B; }
+    .cat-badge-mo   { background:#EAF3DE; color:#3B6D11; }
+
     /* ── Solicitar pieza modal ────────────────────────────────────────────── */
     @media(max-width:700px) {
       .ot-kpis { grid-template-columns:repeat(3,1fr); }
@@ -161,18 +183,12 @@
     <div style="font-size:13px;margin-top:6px" id="det-descripcion"></div>
   </div>
 
-  <!-- Cliente y técnico -->
-  <div class="grid-2" style="gap:8px">
-    <div class="det-section">
-      <div class="det-label">Cliente</div>
-      <div style="font-size:13px;font-weight:500" id="det-cliente"></div>
-      <div style="font-size:11px;color:var(--color-text-muted)" id="det-cliente-tel"></div>
-    </div>
-    <div class="det-section">
-      <div class="det-label">Técnico asignado</div>
-      <div style="font-size:13px;font-weight:500" id="det-tecnico"></div>
-      <div style="font-size:11px;color:var(--color-text-muted)" id="det-prometida"></div>
-    </div>
+  <!-- Cliente -->
+  <div class="det-section">
+    <div class="det-label">Cliente</div>
+    <div style="font-size:13px;font-weight:500" id="det-cliente"></div>
+    <div style="font-size:11px;color:var(--color-text-muted)" id="det-cliente-tel"></div>
+    <div style="font-size:11px;color:var(--color-text-hint);margin-top:4px" id="det-prometida"></div>
   </div>
 
   <!-- Items -->
@@ -230,17 +246,9 @@
     </div>
     <div style="display:flex;flex-direction:column;gap:1rem">
 
-      <div class="grid-2">
-        <div class="form-group">
-          <label class="form-label">Cliente *</label>
-          <select class="form-select" id="ot-cliente"></select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Técnico asignado</label>
-          <select class="form-select" id="ot-tecnico">
-            <option value="">— Sin asignar —</option>
-          </select>
-        </div>
+      <div class="form-group">
+        <label class="form-label">Cliente *</label>
+        <select class="form-select" id="ot-cliente"></select>
       </div>
 
       <div class="grid-2">
@@ -277,16 +285,23 @@
 
       <!-- Items de la OT -->
       <div>
-        <div class="flex-between" style="margin-bottom:8px">
-          <span style="font-size:13px;font-weight:500;color:var(--color-text-muted)">Materiales y servicios</span>
-          <div class="flex gap-8">
-            <button class="btn btn-ghost btn-sm" onclick="agregarItemOT('refaccion')">+ Refacción</button>
-            <button class="btn btn-ghost btn-sm" onclick="agregarItemOT('consumible')">+ Consumible</button>
-            <button class="btn btn-ghost btn-sm" onclick="agregarItemOT('mano_obra')">+ Mano de obra</button>
-          </div>
+        <div style="font-size:13px;font-weight:500;color:var(--color-text-muted);margin-bottom:10px">Materiales y servicios</div>
+
+        <!-- Buscador de catálogo -->
+        <div class="cat-search-wrap" style="margin-bottom:8px">
+          <input class="form-input" id="ot-buscar-catalogo"
+            placeholder="🔍 Buscar refacción, consumible o servicio del catálogo..."
+            autocomplete="off"/>
+          <div class="cat-dropdown" id="ot-catalogo-dropdown"></div>
         </div>
+
+        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+          <button class="btn btn-ghost btn-sm" onclick="agregarItemOT('consumible')">+ Consumible manual</button>
+          <button class="btn btn-ghost btn-sm" onclick="agregarItemOT('mano_obra')">+ Mano de obra</button>
+        </div>
+
         <div style="font-size:11px;color:var(--color-text-hint);margin-bottom:8px">
-          💡 <strong>Refacción</strong> = se instala en el equipo y se cobra · <strong>Consumible</strong> = aceite, lija, etc. (costo interno, no aparece en factura) · <strong>Mano de obra</strong> = tiempo del técnico
+          💡 Busca en el catálogo para autocompletar precio · <strong>Consumible</strong> = aceite, lija, etc. (costo interno) · <strong>Mano de obra</strong> = cobro por tiempo
         </div>
         <div id="ot-items-container"></div>
       </div>
@@ -382,7 +397,6 @@ initSidebar('ordenes');
 let todasOTs   = [];
 let otActual   = null;
 let clientes   = [];
-let tecnicos   = [];
 let productos  = [];
 let vistaActual= 'kanban';
 
@@ -511,8 +525,7 @@ async function verDetalle(id) {
     document.getElementById('det-descripcion').textContent = o.descripcion;
     document.getElementById('det-cliente').textContent  = o.cliente_nombre;
     document.getElementById('det-cliente-tel').textContent = o.cliente_telefono || '';
-    document.getElementById('det-tecnico').textContent  = o.tecnico_nombre || 'Sin asignar';
-    document.getElementById('det-prometida').textContent= o.fecha_prometida ? `Entrega: ${formatDate(o.fecha_prometida)}` : '';
+    document.getElementById('det-prometida').textContent= o.fecha_prometida ? `📅 Entrega prometida: ${formatDate(o.fecha_prometida)}` : '';
     document.getElementById('det-sub').textContent      = formatMoney(o.subtotal);
     document.getElementById('det-imp').textContent      = formatMoney(o.impuestos);
     document.getElementById('det-total').textContent    = formatMoney(o.total);
@@ -671,18 +684,15 @@ async function facturarOT() {
 
 // ── Modal nueva OT ────────────────────────────────────────────────────────────
 document.getElementById('btn-nueva').addEventListener('click', async () => {
-  [clientes, tecnicos, productos] = await Promise.all([
-    api.clientes.list(), api.usuarios.list().catch(()=>[]), api.productos.list(),
+  [clientes, productos] = await Promise.all([
+    api.clientes.list(), api.productos.list(),
   ]);
 
   document.getElementById('ot-cliente').innerHTML =
     clientes.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
-  document.getElementById('ot-tecnico').innerHTML =
-    '<option value="">— Sin asignar —</option>' +
-    tecnicos.filter(u => u.rol === 'operador')
-      .map(u => `<option value="${u.id}">${u.nombre}</option>`).join('');
 
-  ['ot-equipo','ot-serie','ot-desc'].forEach(id => document.getElementById(id).value = '');
+  ['ot-equipo','ot-serie','ot-desc','ot-buscar-catalogo'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('ot-catalogo-dropdown').style.display = 'none';
   document.getElementById('ot-prioridad').value = 'normal';
   document.getElementById('ot-fecha').value = '';
   document.getElementById('ot-items-container').innerHTML = '';
@@ -690,46 +700,78 @@ document.getElementById('btn-nueva').addEventListener('click', async () => {
   openModal('modal-ot');
 });
 
-function agregarItemOT(tipo) {
+function agregarItemOT(tipo, prod = null) {
   const wrap = document.getElementById('ot-items-container');
   const div  = document.createElement('div');
-  const opts = '<option value="">— Sin vincular a inventario —</option>' +
-    productos.map(p => `<option value="${p.id}" data-precio="${p.precio}" data-costo="${p.costo||0}" data-nombre="${p.nombre}">${p.nombre}${p.sku?' ('+p.sku+')':''}</option>`).join('');
 
   const tipoColors = { refaccion:'#E6F1FB', consumible:'#FAEEDA', mano_obra:'#EAF3DE' };
   const tipoLabel  = { refaccion:'Refacción', consumible:'Consumible', mano_obra:'Mano de obra' };
 
-  div.style.cssText = `display:grid;grid-template-columns:auto 1fr 70px 100px auto;gap:8px;align-items:end;margin-bottom:8px;padding:8px;background:${tipoColors[tipo]};border-radius:var(--radius-md)`;
-  div.dataset.tipo = tipo;
+  div.style.cssText = `display:grid;grid-template-columns:auto 1fr 70px 100px auto;gap:8px;align-items:end;margin-bottom:8px;padding:10px;background:${tipoColors[tipo]};border-radius:var(--radius-md)`;
+  div.dataset.tipo     = tipo;
+  div.dataset.prodId   = prod?.id || '';
+
+  const descVal  = prod ? prod.nombre : '';
+  const precioVal= prod ? (tipo === 'consumible' ? (prod.costo || 0) : prod.precio) : '';
 
   div.innerHTML = `
-    <span style="font-size:11px;font-weight:600;white-space:nowrap;padding-bottom:8px;color:var(--color-text-muted)">${tipoLabel[tipo]}</span>
-    <div style="display:flex;flex-direction:column;gap:4px">
-      <select class="form-select item-prod" style="font-size:12px">${opts}</select>
-      <input class="form-input item-desc" placeholder="Descripción" style="font-size:12px"/>
+    <span class="cat-tipo-badge cat-badge-${tipo === 'refaccion' ? 'ref' : tipo === 'consumible' ? 'cons' : 'mo'}" style="align-self:center">${tipoLabel[tipo]}</span>
+    <div class="form-group" style="margin:0">
+      <input class="form-input item-desc" value="${descVal}" placeholder="${prod ? '' : 'Descripción'}" style="font-size:13px"/>
     </div>
     <div class="form-group" style="margin:0">
-      <input class="form-input item-qty" type="number" value="1" min="0.01" step="0.01" style="font-size:13px;text-align:center"/>
+      <input class="form-input item-qty" type="number" value="1" min="0.01" step="0.01" style="font-size:13px;text-align:center" placeholder="Cant."/>
     </div>
     <div class="form-group" style="margin:0">
-      <input class="form-input item-price" type="number" min="0" step="0.01" placeholder="${tipo==='consumible'?'Costo':'Precio'}" style="font-size:13px;text-align:right"/>
+      <input class="form-input item-price" type="number" value="${precioVal}" min="0" step="0.01" placeholder="${tipo==='consumible'?'Costo':'Precio'}" style="font-size:13px;text-align:right"/>
     </div>
     <button class="btn btn-ghost btn-icon" onclick="this.closest('div[data-tipo]').remove();calcTotalesOT()">✕</button>
   `;
 
-  div.querySelector('.item-prod').addEventListener('change', function() {
-    const opt = this.options[this.selectedIndex];
-    if (opt.dataset.nombre) div.querySelector('.item-desc').placeholder = opt.dataset.nombre;
-    if (tipo === 'consumible') {
-      if (opt.dataset.costo) div.querySelector('.item-price').value = opt.dataset.costo;
-    } else {
-      if (opt.dataset.precio) div.querySelector('.item-price').value = opt.dataset.precio;
-    }
-    calcTotalesOT();
-  });
   div.querySelectorAll('input').forEach(i => i.addEventListener('input', calcTotalesOT));
   wrap.appendChild(div);
+  calcTotalesOT();
+  div.querySelector('.item-desc').focus();
 }
+
+// ── Buscador de catálogo ──────────────────────────────────────────────────────
+document.getElementById('ot-buscar-catalogo').addEventListener('input', function() {
+  const q  = this.value.toLowerCase().trim();
+  const dd = document.getElementById('ot-catalogo-dropdown');
+  if (!q || !productos.length) { dd.style.display = 'none'; return; }
+
+  const matches = productos.filter(p =>
+    p.nombre.toLowerCase().includes(q) || (p.sku || '').toLowerCase().includes(q)
+  ).slice(0, 10);
+
+  if (!matches.length) { dd.style.display = 'none'; return; }
+
+  dd.innerHTML = matches.map(p => `
+    <div class="cat-item"
+         onclick="agregarDesdeCatalogo('${p.id}')"
+         data-prod-id="${p.id}">
+      <span class="cat-tipo-badge cat-badge-ref">refacción</span>
+      <span class="cat-item-name">${p.nombre}</span>
+      ${p.sku ? `<span class="cat-item-sku">${p.sku}</span>` : ''}
+      <span class="cat-item-precio">${formatMoney(p.precio)}</span>
+    </div>`).join('');
+  dd.style.display = 'block';
+});
+
+function agregarDesdeCatalogo(prodId) {
+  const prod = productos.find(p => p.id === prodId);
+  if (!prod) return;
+  agregarItemOT('refaccion', prod);
+  document.getElementById('ot-buscar-catalogo').value = '';
+  document.getElementById('ot-catalogo-dropdown').style.display = 'none';
+}
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.cat-search-wrap')) {
+    const dd = document.getElementById('ot-catalogo-dropdown');
+    if (dd) dd.style.display = 'none';
+  }
+});
 
 function calcTotalesOT() {
   let subtotal = 0;
@@ -750,12 +792,11 @@ function calcTotalesOT() {
 document.getElementById('btn-guardar-ot').addEventListener('click', async () => {
   const items = [];
   document.querySelectorAll('#ot-items-container div[data-tipo]').forEach(row => {
-    const tipo    = row.dataset.tipo;
-    const prodId  = row.querySelector('.item-prod')?.value;
-    const desc    = row.querySelector('.item-desc')?.value?.trim() ||
-                    row.querySelector('.item-prod')?.options[row.querySelector('.item-prod').selectedIndex]?.dataset.nombre || '';
-    const qty     = parseFloat(row.querySelector('.item-qty')?.value)   || 0;
-    const price   = parseFloat(row.querySelector('.item-price')?.value) || 0;
+    const tipo   = row.dataset.tipo;
+    const prodId = row.dataset.prodId || null;
+    const desc   = row.querySelector('.item-desc')?.value?.trim() || '';
+    const qty    = parseFloat(row.querySelector('.item-qty')?.value)   || 0;
+    const price  = parseFloat(row.querySelector('.item-price')?.value) || 0;
     if (!qty) return;
     items.push({
       producto_id: prodId || null,
@@ -769,7 +810,6 @@ document.getElementById('btn-guardar-ot').addEventListener('click', async () => 
 
   const body = {
     cliente_id:     document.getElementById('ot-cliente').value,
-    tecnico_id:     document.getElementById('ot-tecnico').value || null,
     descripcion:    document.getElementById('ot-desc').value.trim(),
     equipo:         document.getElementById('ot-equipo').value.trim(),
     num_serie:      document.getElementById('ot-serie').value.trim(),
